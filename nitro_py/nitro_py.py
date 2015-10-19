@@ -11,7 +11,7 @@ import os
 def get_response(url, cert, page):
     """Makes an HTTP GET request to an endpoint"""
     headers = {'Accept': 'application/xml'}
-    return get(url, headers=headers, cert=cert)
+    return get(url + '&page=' + page, headers=headers, cert=cert)
 
 def fmt_mixins(mixins):
     """Formats a list of mixin values into a string useable by the API"""
@@ -78,6 +78,8 @@ def call_nitro(cert, api_key, mixins, feed, filters, env):
     serialize_entities(page1_xml, filters['entity_type'])
     page = count(start=2, step=1)
     for i in range(pages - 1):
+        # keep requests to below 100/min
+        sleep(1)
         next_page = str(next(page))
         successful = False
         while not successful:
