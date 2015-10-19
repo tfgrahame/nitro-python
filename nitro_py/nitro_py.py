@@ -5,6 +5,7 @@ from requests.auth import HTTPBasicAuth
 from lxml import etree
 from math import ceil
 from nitro_py.endpoints import *
+from time import sleep
 import os
 
 def get_response(url, cert, page):
@@ -78,10 +79,16 @@ def call_nitro(cert, api_key, mixins, feed, filters, env):
     page = count(start=2, step=1)
     for i in range(pages - 1):
         next_page = str(next(page))
-        response = partial_get_response(page=next_page)
-        log_nitro(url, next_page, response)
-        response_xml = infoset(response)
-        serialize_entities(response_xml, filters['entity_type'])
+        successful = False
+        while not successful:
+            response = partial_get_response(page=next_page)
+            log_nitro(url, next_page, response)
+            if response.status_code != 200:
+                sleep(10)
+            else:
+                response_xml = infoset(response)
+                serialize_entities(response_xml, filters['entity_type'])
+                successful = True
 
 
 
