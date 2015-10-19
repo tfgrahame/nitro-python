@@ -1,18 +1,16 @@
 from requests import get, put
+from functools import partial
+from itertools import count
 from requests.auth import HTTPBasicAuth
 from lxml import etree
 from math import ceil
 from nitro_py.endpoints import *
 import os
 
-def get_response(endpoint, feed, cert, api_key, mixins=None, **kwargs):
-    """Makes an HTTP GET request to an endpoint, optionally with mixins and parameters"""
+def get_response(url, cert, page):
+    """Makes an HTTP GET request to an endpoint"""
     headers = {'Accept': 'application/xml'}
-    r = get(endpoint + feed + '?api_key=' + api_key + fmt_mixins(mixins) + fmt_kwargs(kwargs), headers=headers, cert=cert)
-    if r.status_code == 200:
-        return r
-    else:
-        r.raise_for_status()
+    return get(url, headers=headers, cert=cert)
 
 def fmt_mixins(mixins):
     """Formats a list of mixin values into a string useable by the API"""
@@ -22,11 +20,11 @@ def fmt_mixins(mixins):
     else:
         return ""
 
-def fmt_kwargs(kwargs):
+def fmt_filters(filters):
     """Formats a dict (key:value pairs) into a string useable by the API"""
     # {'entity_type':'clip', 'availability':'available'}
-    if kwargs:
-        return "".join(['&' + kw + '=' + kwargs[kw] for kw in sorted(kwargs)])
+    if filters:
+        return "".join(['&' + filter + '=' + filters[filter] for filter in sorted(filters)])
     else:
         return ""
 
@@ -63,6 +61,30 @@ def serialize_entities(infoset, entity_type):
         response = put(url=url + pid(entity) + '.xml', data=data, auth=auth)
         with open('exist.log', 'a') as log:
             log.write(url + pid(entity) + '.xml' + ',' + str(response.status_code) + '\n')
+
+def log_nitro(url, page, response):
+    with open('nitro.log', 'a') as log:
+        log.write(url + '&page=' + page + ',' + str(response.status_code) + '\n')
+
+def call_nitro(cert, api_key, mixins, feed, filters, env):
+    """Call Nitro, perform all looping etc"""
+    url = env + feed + '?api_key=' + api_key + fmt_mixins(mixins) + fmt_filters(filters)
+    partial_get_response = partial(get_response, url, cert)
+    page1 = partial_get_response(page='1')
+    log_nitro(url, '1', page1)
+    page1_xml = infoset(page1)
+    pages = pages_total(page1_xml, int(filters['page_size']))
+    serialize_entities(page1_xml, filters['entity_type'])
+    page = count(start=2, step=1)
+    for i in range(pages - 1):
+        next_page = str(next(page))
+        response = partial_get_response(page=next_page)
+        log_nitro(url, next_page, response)
+        response_xml = infoset(response)
+        serialize_entities(response_xml, filters['entity_type'])
+
+
+
 
 
 
