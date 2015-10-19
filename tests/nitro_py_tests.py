@@ -1,6 +1,6 @@
 from nose.tools import *
 from lxml import etree
-from nitro_py.nitro_py import results_total, pages_total, pid, fmt_mixins, fmt_kwargs
+from nitro_py.nitro_py import results_total, pages_total, pid, fmt_mixins, fmt_filters
 
 class TestParseResponse:
     def setup(self):
@@ -29,13 +29,13 @@ class TestParseResponse:
 class TestGetResponse:
     def setup(self):
         self.mixins = ['ancestor_titles', 'contributions']
-        self.kwargs = {'entity_type':'clip', 'availability':'available'}
+        self.filters = {'entity_type':'clip', 'availability':'available'}
 
     def test_fmt_mixins(self):
         assert_equal(fmt_mixins(self.mixins), '&mixin=ancestor_titles&mixin=contributions')
 
-    def test_fmt_kwargs(self):
-        assert_equal(fmt_kwargs(self.kwargs), '&availability=available&entity_type=clip')
+    def test_fmt_filters(self):
+        assert_equal(fmt_filters(self.filters), '&availability=available&entity_type=clip')        
 
     def teardown(self):
         pass
