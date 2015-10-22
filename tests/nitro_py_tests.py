@@ -20,7 +20,7 @@ class TestParseResponse:
         pass
 
     def test_pid(self):
-        assert_equal(pid(self.clip_infoset), 'p02v33hl')
+        assert_equal(pid(self.clip_infoset), 'p035rj3b')
 
     def teardown(self):
         self.page.close()

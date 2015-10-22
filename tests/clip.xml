@@ -1,4 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<clip xsi:schemaLocation="http://www.bbc.co.uk/nitro/ https://nitro.api.bbci.co.uk/nitro/api/schema" xmlns="http://www.bbc.co.uk/nitro/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <pid>p02v33hl</pid>
+<clip xsi:schemaLocation="http://www.bbc.co.uk/nitro/ https://nitro.api.bbci.co.uk/nitro/api/schema"
+  xmlns="http://www.bbc.co.uk/nitro/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <pid>p00zjllb</pid>
+  <partner>s0000001</partner>
+  <updated_time>2015-10-22T10:22:49Z</updated_time>
+  <embargoed>false</embargoed>
+  <title>Test clip</title>
+  <synopses>
+    <short>Short synopsis</short>
+    <medium>A medium synopsis</medium>
+    <long>This is a long synopsis</long>
+  </synopses>
+  <advertising_allowed>none</advertising_allowed>
+  <media_type>Video</media_type>
+  <image deprecated="true" deprecated_since="2014-07-09" replaced_by="mixin=images"
+    template_url="http://ichef.test.bbci.co.uk/images/ic/$recipe/legacy/clip/p00zjllb.jpg"/>
+  <master_brand result_type="master_brand" mid="bbc_one"
+    href="/nitro-e2e/api/master_brands?mid=bbc_one"/>
+  <clip_of result_type="episode" pid="p00zjl9l" href="/nitro-e2e/api/programmes?pid=p00zjl9l"/>
+  <genre_groups result_type="genre_groups" href="/nitro/api/v1/clips/p00zjllb/genre_groups/"
+    deprecated="true" deprecated_since="2015-03-23" replaced_by="genre_groupings"/>
+  <formats result_type="formats" href="/nitro/api/v1/clips/p00zjllb/formats/" deprecated="true"
+    deprecated_since="2015-03-23" replaced_by="programme_formats">
+    <format format_id="PT001">Animation</format>
+  </formats>
+  <ancestors result_type="mixed" href="/nitro/api/v1/clips/p00zjllb/ancestors/"/>
+  <items_for result_type="item" href="/nitro-e2e/api/items?programme=p00zjllb"/>
+  <programme_formats>
+    <format format_id="PT001">Animation</format>
+  </programme_formats>
+  <ancestor_titles>
+    <brand>
+      <pid>p00zjl94</pid>
+      <title>B2b-Test Brand</title>
+    </brand>
+    <series>
+      <pid>p00zjl9h</pid>
+      <title>B2b-Test Series</title>
+    </series>
+    <episode>
+      <pid>p00zjl9l</pid>
+      <title>B2b - Test Episode</title>
+      <presentation_title>Slightly Less Sinister Muppets</presentation_title>
+      <containers_title>Sesame Street</containers_title>
+    </episode>
+  </ancestor_titles>
 </clip>
