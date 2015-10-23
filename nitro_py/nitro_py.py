@@ -8,10 +8,13 @@ from nitro_py.endpoints import *
 from time import sleep
 import os
 
-def get_response(url, page):
+def get_response(base, mixins, filters, page):
     """Makes an HTTP GET request to an endpoint"""
-    headers = {'Accept': 'application/xml'}
-    return get(url + '&page=' + page, headers=headers, cert=os.environ.get('CERT'))
+    url = base + '?api_key=' + os.environ.get('NITRO_E2E_KEY') + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
+    response = get(url, headers={'Accept': 'application/xml'}, cert=os.environ.get('CERT'))
+    with open('nitro.log', 'a') as log:
+        log.write(url + ',' + str(response.status_code) + '\n')
+    return response
 
 def fmt_mixins(mixins):
     """Formats a list of mixin values into a string useable by the API"""
@@ -53,11 +56,6 @@ def pid(infoset):
     # Since the infoset in this case is Element, xpath() operates on the context node
     return infoset.xpath('n:pid/text()', namespaces=NSMAP)[0]
 
-def log_nitro(url, page, response):
-    """Just writes a string to a file"""
-    with open('nitro.log', 'a') as log:
-        log.write(url + '&page=' + page + ',' + str(response.status_code) + '\n')
-
 def serialize_entities(infoset, entity_type):
     """Makes an HTTP PUT request to a local instance of eXist"""
     auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
@@ -68,15 +66,12 @@ def serialize_entities(infoset, entity_type):
         with open('exist.log', 'a') as log:
             log.write(url + pid(entity) + '.xml' + ',' + str(response.status_code) + '\n')
 
-def call_nitro(api_key, mixins, feed, filters, env):
+def call_nitro(base, mixins, filters):
     """Call Nitro, perform all looping etc"""
-    url = env + feed + '?api_key=' + api_key + fmt_mixins(mixins) + fmt_filters(filters)
-    partial_get_response = partial(get_response, url)
+    partial_get_response = partial(get_response, base, mixins, filters)
     page1 = partial_get_response(page='1')
-    log_nitro(url, '1', page1)
     page1_xml = get_infoset(page1)
     pages = pages_total(page1_xml, int(filters['page_size']))
-    # get_ancestors(page1_xml, filters['entity_type'], env, api_key)
     serialize_entities(page1_xml, filters['entity_type'])
     page = count(start=2, step=1)
     for i in range(pages - 1):
@@ -86,15 +81,12 @@ def call_nitro(api_key, mixins, feed, filters, env):
         successful = False
         while not successful:
             response = partial_get_response(page=next_page)
-            log_nitro(url, next_page, response)
             if response.status_code != 200:
                 sleep(10)
             else:
                 response_xml = get_infoset(response)
-                # get_ancestors
                 serialize_entities(response_xml, filters['entity_type'])
                 successful = True
-
 
 
 
