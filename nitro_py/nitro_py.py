@@ -8,9 +8,9 @@ from nitro_py.endpoints import *
 from time import sleep
 import os
 
-def get_response(base, mixins, filters, page):
+def get_response(base, mixins, filters, api_key, page):
     """Makes an HTTP GET request to an endpoint"""
-    url = base + '?api_key=' + os.environ.get('NITRO_E2E_KEY') + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
+    url = base + '?api_key=' + api_key + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
     response = get(url, headers={'Accept': 'application/xml'}, cert=os.environ.get('CERT'))
     with open('nitro.log', 'a') as log:
         log.write(url + ',' + str(response.status_code) + '\n')
@@ -34,7 +34,7 @@ def fmt_filters(filters):
 
 NSMAP = {'n': 'http://www.bbc.co.uk/nitro/'}
 
-def get_infoset(response):
+def infoset(response):
     """Parse the bytestream of a requests object into an ElementTree object"""
     return etree.XML(response.content)
 
@@ -66,13 +66,42 @@ def serialize_entities(infoset, entity_type):
         with open('exist.log', 'a') as log:
             log.write(url + pid(entity) + '.xml' + ',' + str(response.status_code) + '\n')
 
-def call_nitro(base, mixins, filters):
+def serialize_entity(entity):
+    auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
+    url = 'http://localhost:8080/exist/rest/db/test/' + pid(entity) + '.xml'
+    data = etree.tostring(entity)
+    response = put(url=url, data=data, auth=auth)
+    with open('exist.log', 'a') as log:
+            log.write(url + ',' + str(response.status_code) + '\n')
+
+def get_ancestors(entity, entity_type, base, api_key):
+    """Given a Nitro entity, get the ancestors and insert them into the entity document"""
+    ancestors = etree.Element('ancestors')
+    entity.insert(0, ancestors)
+    mixins = ['ancestor_titles', 'genre_groupings']
+    for ancestor in etree.ElementTree(entity).xpath('/n:' + entity_type + '/n:ancestor_titles/*', namespaces=NSMAP):
+        # keep requests to below 100/min
+        sleep(1)
+        successful = False
+        while not successful:
+            ancestor_response = get_response(base, mixins, {'pid': ancestor.xpath('n:pid/text()', namespaces=NSMAP)[0]}, api_key, '1')
+            if ancestor_response.status_code != 200:
+                sleep(10)
+            else:
+                response_xml = infoset(ancestor_response)
+                ancestors.append(response_xml.xpath('/n:nitro/n:results/n:' + etree.QName(ancestor).localname, namespaces=NSMAP)[0])
+                successful = True
+    return entity
+
+def call_nitro(base, mixins, filters, api_key):
     """Call Nitro, perform all looping etc"""
-    partial_get_response = partial(get_response, base, mixins, filters)
-    page1 = partial_get_response(page='1')
-    page1_xml = get_infoset(page1)
-    pages = pages_total(page1_xml, int(filters['page_size']))
-    serialize_entities(page1_xml, filters['entity_type'])
+    partial_get_response = partial(get_response, base, mixins, filters, api_key)
+    first_response = partial_get_response(page='1')
+    first_response_xml = infoset(first_response)
+    for entity in get_resources(first_response_xml, filters['entity_type']):
+        entity_with_ancestors = get_ancestors(entity, filters['entity_type'], base, api_key)
+        serialize_entity(entity_with_ancestors)
+    pages = pages_total(first_response_xml, int(filters['page_size']))
     page = count(start=2, step=1)
     for i in range(pages - 1):
         # keep requests to below 100/min
@@ -84,10 +113,11 @@ def call_nitro(base, mixins, filters):
             if response.status_code != 200:
                 sleep(10)
             else:
-                response_xml = get_infoset(response)
-                serialize_entities(response_xml, filters['entity_type'])
+                response_xml = infoset(response)
+                for entity in get_resources(first_response_xml, filters['entity_type']):
+                    entity_with_ancestors = get_ancestors(entity, filters['entity_type'], base, api_key)
+                    serialize_entity(entity_with_ancestors)
                 successful = True
-
 
 
 
