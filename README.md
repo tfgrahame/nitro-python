@@ -1,2 +1,2 @@
 # nitro-python
-Python Library for accessing Nitro.
+Some functions for extracting data from Nitro
