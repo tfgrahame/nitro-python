@@ -59,12 +59,12 @@ def pid(infoset):
 def serialize_entities(infoset, entity_type):
     """Makes an HTTP PUT request to a local instance of eXist"""
     auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
-    url = 'http://localhost:8080/exist/rest/db/test/'
     for entity in get_resources(infoset, entity_type):
         data = etree.tostring(entity)
-        response = put(url=url + pid(entity) + '.xml', data=data, auth=auth)
+        url = 'http://localhost:8080/exist/rest/db/test/' + pid(entity) + '.xml'
+        response = put(url=url, data=data, auth=auth)
         with open('exist.log', 'a') as log:
-            log.write(url + pid(entity) + '.xml' + ',' + str(response.status_code) + '\n')
+            log.write(url + ',' + str(response.status_code) + '\n')
 
 def serialize_entity(entity):
     auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
@@ -85,11 +85,13 @@ def get_ancestors(entity, entity_type, base, api_key):
         successful = False
         while not successful:
             ancestor_response = get_response(base, mixins, {'pid': ancestor.xpath('n:pid/text()', namespaces=NSMAP)[0]}, api_key, '1')
-            if ancestor_response.status_code != 200:
+            if ancestor_response.status_code == 500:
                 sleep(10)
-            else:
+            elif ancestor_response.status_code == 200:
                 response_xml = infoset(ancestor_response)
                 ancestors.append(response_xml.xpath('/n:nitro/n:results/n:' + etree.QName(ancestor).localname, namespaces=NSMAP)[0])
+                successful = True
+            else:
                 successful = True
     return entity
 
@@ -110,13 +112,15 @@ def call_nitro(base, mixins, filters, api_key):
         successful = False
         while not successful:
             response = partial_get_response(page=next_page)
-            if response.status_code != 200:
+            if response.status_code == 500:
                 sleep(10)
-            else:
+            elif response.status_code == 200:
                 response_xml = infoset(response)
                 for entity in get_resources(first_response_xml, filters['entity_type']):
                     entity_with_ancestors = get_ancestors(entity, filters['entity_type'], base, api_key)
                     serialize_entity(entity_with_ancestors)
+                successful = True
+            else:
                 successful = True
 
 
