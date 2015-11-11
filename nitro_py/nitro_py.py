@@ -85,14 +85,18 @@ def get_ancestors(entity, entity_type, base, api_key):
                 successful = True
     return entity
 
+def augment_and_serialize(resources, filters, base, api_key):
+    """Get the ancestors for each resource in the page and write to eXist"""
+    for entity in get_resources(resources, filters['entity_type']):
+        entity_with_ancestors = get_ancestors(entity, filters['entity_type'], base, api_key)
+        serialize_entity(entity_with_ancestors)
+
 def call_nitro(base, mixins, filters, api_key):
     """Call Nitro, perform all looping etc"""
     partial_get_response = partial(get_response, base, mixins, filters, api_key)
     first_response = partial_get_response(page='1')
     first_response_xml = infoset(first_response)
-    for entity in get_resources(first_response_xml, filters['entity_type']):
-        entity_with_ancestors = get_ancestors(entity, filters['entity_type'], base, api_key)
-        serialize_entity(entity_with_ancestors)
+    augment_and_serialize(first_response_xml, filters, base, api_key)
     pages = pages_total(first_response_xml, int(filters['page_size']))
     page = count(start=2, step=1)
     for i in range(pages - 1):
@@ -106,13 +110,10 @@ def call_nitro(base, mixins, filters, api_key):
                 sleep(10)
             elif response.status_code == 200:
                 response_xml = infoset(response)
-                for entity in get_resources(first_response_xml, filters['entity_type']):
-                    entity_with_ancestors = get_ancestors(entity, filters['entity_type'], base, api_key)
-                    serialize_entity(entity_with_ancestors)
+                augment_and_serialize(response_xml, filters, base, api_key)
                 successful = True
             else:
                 successful = True
-
 
 
 
