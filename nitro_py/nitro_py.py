@@ -56,23 +56,13 @@ def pid(infoset):
     # Since the infoset in this case is Element, xpath() operates on the context node
     return infoset.xpath('n:pid/text()', namespaces=NSMAP)[0]
 
-def serialize_entities(infoset, entity_type):
-    """Makes an HTTP PUT request to a local instance of eXist"""
-    auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
-    for entity in get_resources(infoset, entity_type):
-        data = etree.tostring(entity)
-        url = 'http://localhost:8080/exist/rest/db/test/' + pid(entity) + '.xml'
-        response = put(url=url, data=data, auth=auth)
-        with open('exist.log', 'a') as log:
-            log.write(url + ',' + str(response.status_code) + '\n')
-
 def serialize_entity(entity):
     auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
     url = 'http://localhost:8080/exist/rest/db/test/' + pid(entity) + '.xml'
     data = etree.tostring(entity)
     response = put(url=url, data=data, auth=auth)
     with open('exist.log', 'a') as log:
-            log.write(url + ',' + str(response.status_code) + '\n')
+        log.write(url + ',' + str(response.status_code) + '\n')
 
 def get_ancestors(entity, entity_type, base, api_key):
     """Given a Nitro entity, get the ancestors and insert them into the entity document"""
