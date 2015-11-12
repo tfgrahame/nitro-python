@@ -57,6 +57,7 @@ def pid(infoset):
     return infoset.xpath('n:pid/text()', namespaces=NSMAP)[0]
 
 def serialize_entity(entity):
+    """Write the XML to eXist"""
     auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
     url = 'http://localhost:8080/exist/rest/db/test/' + pid(entity) + '.xml'
     data = etree.tostring(entity)
@@ -71,7 +72,7 @@ def get_ancestors(entity, entity_type, base):
     mixins = ['ancestor_titles', 'genre_groupings']
     for ancestor in etree.ElementTree(entity).xpath('/n:' + entity_type + '/n:ancestor_titles/*', namespaces=NSMAP):
         # keep requests to below 100/min
-        sleep(1)
+        sleep(0.6)
         successful = False
         while not successful:
             ancestor_response = get_response(base, mixins, {'pid': ancestor.xpath('n:pid/text()', namespaces=NSMAP)[0]}, '1')
@@ -101,7 +102,7 @@ def call_nitro(base, mixins, filters):
     page = count(start=2, step=1)
     for i in range(pages - 1):
         # keep requests to below 100/min
-        sleep(1)
+        sleep(0.6)
         next_page = str(next(page))
         successful = False
         while not successful:
