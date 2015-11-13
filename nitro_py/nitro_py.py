@@ -56,10 +56,10 @@ def pid(infoset):
     # Since the infoset in this case is Element, xpath() operates on the context node
     return infoset.xpath('n:pid/text()', namespaces=NSMAP)[0]
 
-def serialize_entity(entity):
+def serialize_entity(entity, filters):
     """Write the XML to eXist"""
     auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
-    url = 'http://localhost:8080/exist/rest/db/test/' + pid(entity) + '.xml'
+    url = 'http://localhost:8080/exist/rest/db/' + filters['master_brand'] + '/' + pid(entity) + '.xml'
     data = etree.tostring(entity)
     response = put(url=url, data=data, auth=auth)
     with open('exist.log', 'a') as log:
@@ -90,7 +90,7 @@ def augment_and_serialize(resources, filters, base):
     """Get the ancestors for each resource in the page and write to eXist"""
     for entity in get_resources(resources, filters['entity_type']):
         entity_with_ancestors = get_ancestors(entity, filters['entity_type'], base)
-        serialize_entity(entity_with_ancestors)
+        serialize_entity(entity_with_ancestors, filters)
 
 def call_nitro(base, mixins, filters):
     """Call Nitro, perform all looping etc"""
