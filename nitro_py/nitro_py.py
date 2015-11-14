@@ -10,7 +10,7 @@ import os
 
 def get_response(base, mixins, filters, page):
     """Makes an HTTP GET request to an endpoint"""
-    url = base + '?api_key=' + os.environ.get('NITRO_E2E_KEY') + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
+    url = base + '?api_key=' + os.environ.get('NITRO_KEY') + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
     response = get(url, headers={'Accept': 'application/xml'}, cert=os.environ.get('CERT'))
     with open('nitro.log', 'a') as log:
         log.write(url + ',' + str(response.status_code) + '\n')
