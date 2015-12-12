@@ -10,7 +10,7 @@ import os
 
 def get_response(base, mixins, filters, page):
     """Makes an HTTP GET request to an endpoint"""
-    url = base + '?api_key=' + os.environ.get('NITRO_KEY') + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
+    url = base + '?api_key=' + os.environ.get('NITRO_E2E_KEY') + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
     response = get(url, headers={'Accept': 'application/xml'}, cert=os.environ.get('CERT'))
     with open('nitro.log', 'a') as log:
         log.write(url + ',' + str(response.status_code) + '\n')
@@ -56,10 +56,10 @@ def pid(infoset):
     # Since the infoset in this case is Element, xpath() operates on the context node
     return infoset.xpath('n:pid/text()', namespaces=NSMAP)[0]
 
-def serialize_entity(entity, filters):
+def serialize_entity(entity, exist_collection):
     """Write the XML to eXist"""
     auth = HTTPBasicAuth(os.environ.get('USER'), os.environ.get('EXIST_PASSWORD'))
-    url = 'http://localhost:8080/exist/rest/db/' + filters['master_brand'] + '/' + pid(entity) + '.xml'
+    url = 'http://localhost:8080/exist/rest/db/' + exist_collection + '/' + pid(entity) + '.xml'
     data = etree.tostring(entity)
     response = put(url=url, data=data, auth=auth)
     with open('exist.log', 'a') as log:
@@ -86,18 +86,18 @@ def get_ancestors(entity, entity_type, base):
                 successful = True
     return entity
 
-def augment_and_serialize(resources, filters, base):
+def augment_and_serialize(resources, filters, base, exist_collection):
     """Get the ancestors for each resource in the page and write to eXist"""
     for entity in get_resources(resources, filters['entity_type']):
         entity_with_ancestors = get_ancestors(entity, filters['entity_type'], base)
-        serialize_entity(entity_with_ancestors, filters)
+        serialize_entity(entity_with_ancestors, exist_collection)
 
-def call_nitro(base, mixins, filters):
+def call_nitro(base, mixins, filters, exist_collection):
     """Call Nitro, perform all looping etc"""
     partial_get_response = partial(get_response, base, mixins, filters)
     first_response = partial_get_response(page='1')
     first_response_xml = infoset(first_response)
-    augment_and_serialize(first_response_xml, filters, base)
+    augment_and_serialize(first_response_xml, filters, base, exist_collection)
     pages = pages_total(first_response_xml, int(filters['page_size']))
     page = count(start=2, step=1)
     for i in range(pages - 1):
@@ -111,7 +111,7 @@ def call_nitro(base, mixins, filters):
                 sleep(10)
             elif response.status_code == 200:
                 response_xml = infoset(response)
-                augment_and_serialize(response_xml, filters, base)
+                augment_and_serialize(response_xml, filters, base, exist_collection)
                 successful = True
             else:
                 successful = True
