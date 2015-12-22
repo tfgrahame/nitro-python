@@ -10,7 +10,7 @@ import os
 
 def get_response(base, mixins, filters, page):
     """Makes an HTTP GET request to an endpoint"""
-    url = base + '?api_key=' + os.environ.get('NITRO_E2E_KEY') + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
+    url = base + '?api_key=' + os.environ.get('NITRO_KEY') + fmt_mixins(mixins) + fmt_filters(filters) + '&page=' + page
     response = get(url, headers={'Accept': 'application/xml'}, cert=os.environ.get('CERT'))
     with open('nitro.log', 'a') as log:
         log.write(url + ',' + str(response.status_code) + '\n')
@@ -76,7 +76,7 @@ def get_ancestors(entity, entity_type, base):
         successful = False
         while not successful:
             ancestor_response = get_response(base, mixins, {'pid': ancestor.xpath('n:pid/text()', namespaces=NSMAP)[0]}, '1')
-            if ancestor_response.status_code == 500:
+            if ancestor_response.status_code != 200:
                 sleep(10)
             elif ancestor_response.status_code == 200:
                 response_xml = infoset(ancestor_response)
@@ -107,7 +107,7 @@ def call_nitro(base, mixins, filters, exist_collection):
         successful = False
         while not successful:
             response = partial_get_response(page=next_page)
-            if response.status_code == 500:
+            if response.status_code != 200:
                 sleep(10)
             elif response.status_code == 200:
                 response_xml = infoset(response)
